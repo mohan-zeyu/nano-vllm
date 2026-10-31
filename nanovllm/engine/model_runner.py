@@ -15,6 +15,7 @@ from nanovllm.utils.loader import load_model
 class ModelRunner:
 
     def __init__(self, config: Config, rank: int, event: Event | list[Event]):
+        Sequence.block_size = config.kvcache_block_size    # spawned workers start with the class default
         self.config = config
         hf_config = config.hf_config
         self.block_size = config.kvcache_block_size
@@ -232,6 +233,8 @@ class ModelRunner:
         block_tables = torch.zeros(max_bs, max_num_blocks, dtype=torch.int32)
         outputs = torch.zeros(max_bs, hf_config.hidden_size)
         self.graph_bs = [1, 2, 4, 8] + list(range(16, max_bs + 1, 16))
+        if self.graph_bs[-1] < max_bs:
+            self.graph_bs.append(max_bs)
         self.graphs = {}
         self.graph_pool = None
 
